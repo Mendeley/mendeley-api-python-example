@@ -48,12 +48,20 @@ def list_documents():
     access_token = request.args.get('access_token')
     session = service.get_session(token=access_token)
 
-    docs = session.get('https://mix.mendeley.com/documents').json()
+    docs_response = session.get('https://mix.mendeley.com/documents')
 
-    name = session.get(
-        'https://mix.mendeley.com/profiles/me').json()['display_name']
+    if not docs_response.ok:
+        return render_template('error.html', error_text='Error getting documents')
 
-    return render_template('library.html', name=name, docs=docs, access_token=access_token)
+    profile_response = session.get(
+        'https://mix.mendeley.com/profiles/me')
+
+    if not profile_response.ok:
+        return render_template('error.html', error_text='Error getting profile')
+
+    name = profile_response.json()['display_name']
+
+    return render_template('library.html', name=name, docs=docs_response.json(), access_token=access_token)
 
 
 @app.route('/document')
@@ -62,9 +70,12 @@ def get_document():
     document_id = request.args.get('document_id')
     session = service.get_session(token=access_token)
 
-    doc = session.get('https://mix.mendeley.com/documents/%s' % document_id).json()
+    doc_response = session.get('https://mix.mendeley.com/documents/%s' % document_id)
 
-    return render_template('metadata.html', doc=doc)
+    if not doc_response.ok:
+        return render_template('error.html', error_text='Error getting document')
+
+    return render_template('metadata.html', doc=doc_response.json())
 
 
 @app.route('/metadataLookup')
