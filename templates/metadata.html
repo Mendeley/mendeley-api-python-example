@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Mendeley Python Example</title>
+</head>
+
+<body>
+<h1>{{doc['title']}}</h1>
+
+<h2>Authors</h2>
+<ul>
+    {% for author in doc['authors'] %}
+        <li>{{author['forename']}} {{author['surname']}}</li>
+    {% endfor %}
+</ul>
+
+<h2>Source</h2>
+{{doc['source']}}
+
+<h2>Year</h2>
+{{doc['year']}}
+
+</body>
+</html>
