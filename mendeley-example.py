@@ -13,7 +13,7 @@ service = OAuth2Service(name='mendeley',
                         client_id=os.environ['MENDELEY_CLIENT_ID'],
                         client_secret=os.environ['MENDELEY_CLIENT_SECRET'])
 
-REDIRECT_URI = 'http://127.0.0.1:5000/oauth'
+REDIRECT_URI = 'http://localhost:5000/oauth'
 
 
 @app.route('/')
