@@ -15,7 +15,7 @@ It's built with [Flask](http://flask.pocoo.org/) and [Jinja2](http://jinja.pocoo
 
         pip install -r requirements.txt
 
-3. Register your client at the [developer portal](http://dev.mendeley.com), with the redirect URI of http://localhost:5000.  This will give you a client ID and secret.
+3. Register your client at the [developer portal](http://dev.mendeley.com), with the redirect URI of http://localhost:5000/oauth.  This will give you a client ID and secret.
 4. Set the environment variables MENDELEY_CLIENT_ID and MENDELEY_CLIENT_SECRET to your client ID and secret respectively.
 5. Start the server:
 
