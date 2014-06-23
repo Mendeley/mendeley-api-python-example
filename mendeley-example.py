@@ -1,6 +1,6 @@
 import os
-
 from urllib import urlencode
+
 from flask import Flask, redirect, render_template, request
 from rauth.service import OAuth2Service
 
@@ -28,19 +28,27 @@ def home():
 
 @app.route('/oauth')
 def auth_return():
+    if 'error_description' in request.args:
+        return render_template('error.html', error_text=request.args.get('error_description'))
+
     code = request.args.get('code')
 
     data = dict(code=code,
                 redirect_uri=REDIRECT_URI,
                 grant_type='authorization_code')
 
-    auth_rsp = service.get_raw_access_token('POST', data=data).json()
-    access_token = auth_rsp['access_token']
+    auth_rsp = service.get_raw_access_token('POST', data=data)
 
-    if access_token:
+    if auth_rsp.ok:
+        access_token = auth_rsp.json()['access_token']
         return redirect("/listDocuments?access_token=%s" % access_token)
     else:
-        return render_template('error.html', error_text=auth_rsp['error_description'])
+        try:
+            error_text = auth_rsp.json()['error_description']
+        except ValueError:
+            error_text = "Error getting access token (status %s, text %s)" % (auth_rsp.status_code, auth_rsp.text)
+
+        return render_template('error.html', error_text=error_text)
 
 
 @app.route('/listDocuments')
