@@ -6,7 +6,7 @@ This is a simple example of an application that consumes the [Mendeley](http://w
 
 The application is a website that allows you to see the documents in your Mendeley library, together with their annotations.  It also allows you to look up a document by [DOI](http://www.doi.org/).
 
-It's built with [Flask](http://flask.pocoo.org/) and [Jinja2](http://jinja.pocoo.org/docs/).  Authenticated HTTP requests are handled by [Rauth](https://github.com/litl/rauth).
+It's built with [Flask](http://flask.pocoo.org/) and [Jinja2](http://jinja.pocoo.org/docs/).  Authenticated HTTP requests are handled by [Requests](http://docs.python-requests.org/) and [OAuthLib](https://oauthlib.readthedocs.org/).
 
 ## How to run ##
 

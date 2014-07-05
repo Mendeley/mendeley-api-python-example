@@ -1,27 +1,30 @@
 import os
 from urllib import urlencode
 
-from flask import Flask, redirect, render_template, request
-from rauth.service import OAuth2Service
+from flask import Flask, redirect, render_template, request, session
+from requests_oauthlib import OAuth2Session
+from oauthlib.oauth2.rfc6749.errors import OAuth2Error
+
+
+CLIENT_ID = os.environ['MENDELEY_CLIENT_ID']
+CLIENT_SECRET = os.environ['MENDELEY_CLIENT_SECRET']
+REDIRECT_URI = 'http://localhost:5000/oauth'
+
+AUTHORIZE_URL = 'https://mix.mendeley.com/oauth/authorize'
+TOKEN_URL = 'https://mix.mendeley.com/oauth/token'
 
 app = Flask(__name__)
 app.debug = True
-
-service = OAuth2Service(name='mendeley',
-                        authorize_url='https://mix.mendeley.com/oauth/authorize',
-                        access_token_url='https://mix.mendeley.com/oauth/token',
-                        client_id=os.environ['MENDELEY_CLIENT_ID'],
-                        client_secret=os.environ['MENDELEY_CLIENT_SECRET'])
-
-REDIRECT_URI = 'http://localhost:5000/oauth'
+app.secret_key = CLIENT_SECRET
 
 
 @app.route('/')
 def home():
-    login_url = service.get_authorize_url(
-        redirect_uri=REDIRECT_URI,
-        scope='all',
-        response_type='code')
+    if 'token' in session:
+        return redirect('/listDocuments')
+
+    oauth = OAuth2Session(client_id=CLIENT_ID, redirect_uri=REDIRECT_URI, scope=['all'])
+    (login_url, state) = oauth.authorization_url(AUTHORIZE_URL)
 
     return render_template('home.html', login_url=login_url)
 
@@ -32,53 +35,49 @@ def auth_return():
         return render_template('error.html', error_text=request.args.get('error_description'))
 
     code = request.args.get('code')
+    oauth = OAuth2Session(client_id=CLIENT_ID, redirect_uri=REDIRECT_URI, scope=['all'])
 
-    data = dict(code=code,
-                redirect_uri=REDIRECT_URI,
-                grant_type='authorization_code')
-
-    auth_rsp = service.get_raw_access_token('POST', data=data)
-
-    if auth_rsp.ok:
-        access_token = auth_rsp.json()['access_token']
-        return redirect("/listDocuments?access_token=%s" % access_token)
-    else:
-        try:
-            error_text = auth_rsp.json()['error_description']
-        except ValueError:
-            error_text = "Error getting access token (status %s, text %s)" % (auth_rsp.status_code, auth_rsp.text)
-
+    try:
+        session['token'] = oauth.fetch_token(TOKEN_URL, code=code, client_secret=CLIENT_SECRET)
+        return redirect('/listDocuments')
+    except OAuth2Error as e:
+        error_text = 'Error getting access token (status %s, text %s)' % (e.status_code, e.description)
+        return render_template('error.html', error_text=error_text)
+    except ValueError:
+        error_text = 'Error parsing token response.  Are your client ID/secret correct?'
         return render_template('error.html', error_text=error_text)
 
 
 @app.route('/listDocuments')
 def list_documents():
-    access_token = request.args.get('access_token')
-    session = service.get_session(token=access_token)
+    if 'token' not in session:
+        return redirect('/')
 
-    docs_response = session.get('https://mix.mendeley.com/documents')
+    oauth = OAuth2Session(client_id=CLIENT_ID, token=session['token'])
+    docs_response = oauth.get('https://mix.mendeley.com/documents')
 
     if not docs_response.ok:
         return render_template('error.html', error_text='Error getting documents')
 
-    profile_response = session.get(
-        'https://mix.mendeley.com/profiles/me')
+    profile_response = oauth.get('https://mix.mendeley.com/profiles/me')
 
     if not profile_response.ok:
         return render_template('error.html', error_text='Error getting profile')
 
     name = profile_response.json()['display_name']
 
-    return render_template('library.html', name=name, docs=docs_response.json(), access_token=access_token)
+    return render_template('library.html', name=name, docs=docs_response.json())
 
 
 @app.route('/document')
 def get_document():
-    access_token = request.args.get('access_token')
-    document_id = request.args.get('document_id')
-    session = service.get_session(token=access_token)
+    if 'token' not in session:
+        return redirect('/')
 
-    doc_response = session.get('https://mix.mendeley.com/documents/%s' % document_id)
+    document_id = request.args.get('document_id')
+
+    oauth = OAuth2Session(client_id=CLIENT_ID, token=session['token'])
+    doc_response = oauth.get('https://mix.mendeley.com/documents/%s' % document_id)
 
     if not doc_response.ok:
         return render_template('error.html', error_text='Error getting document')
@@ -88,33 +87,37 @@ def get_document():
 
 @app.route('/metadataLookup')
 def metadata_lookup():
-    access_token = request.args.get('access_token')
-    doi = request.args.get('doi')
-    session = service.get_session(token=access_token)
+    if 'token' not in session:
+        return redirect('/')
 
-    metadata_response = session.get('https://mix.mendeley.com/metadata?%s' % urlencode({'doi': doi}))
+    doi = request.args.get('doi')
+
+    oauth = OAuth2Session(client_id=CLIENT_ID, token=session['token'])
+    metadata_response = oauth.get('https://mix.mendeley.com/metadata?%s' % urlencode({'doi': doi}))
 
     if metadata_response.ok:
         catalog_id = metadata_response.json()['catalog_id']
-        response = session.get('https://mix.mendeley.com/catalog/%s?view=all' % catalog_id)
+        response = oauth.get('https://mix.mendeley.com/catalog/%s?view=all' % catalog_id)
 
         return render_template('metadata.html', doc=response.json())
     else:
-        return render_template('error.html', error_text="Could not find metadata for DOI %s" % doi)
+        return render_template('error.html', error_text='Could not find metadata for DOI %s' % doi)
 
 
 @app.route('/annotations')
 def annotations():
-    access_token = request.args.get('access_token')
-    document_id = request.args.get('document_id')
-    session = service.get_session(token=access_token)
+    if 'token' not in session:
+        return redirect('/')
 
-    annotations_response = session.get('https://mix.mendeley.com/annotations?document_id=%s' % document_id)
+    document_id = request.args.get('document_id')
+
+    oauth = OAuth2Session(client_id=CLIENT_ID, token=session['token'])
+    annotations_response = oauth.get('https://mix.mendeley.com/annotations?document_id=%s' % document_id)
 
     if annotations_response.ok:
         annotation_texts = []
         for annotation in annotations_response.json():
-            if annotation.has_key('text'):
+            if 'text' in annotation:
                 annotation_texts.append(annotation['text'])
 
         return render_template('annotations.html', annotation_texts=annotation_texts)
@@ -122,8 +125,11 @@ def annotations():
         return render_template('error.html', error_text='Error getting annotations')
 
 
+@app.route('/logout')
+def logout():
+    session.pop('token', None)
+    return redirect('/')
+
+
 if __name__ == '__main__':
     app.run()
-
-
-

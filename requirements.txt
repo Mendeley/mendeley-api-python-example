@@ -4,6 +4,7 @@ MarkupSafe==0.23
 Werkzeug==0.9.6
 argparse==1.2.1
 itsdangerous==0.24
-rauth==0.7.0
+oauthlib==0.6.3
 requests==2.3.0
+requests-oauthlib==0.4.1
 wsgiref==0.1.2

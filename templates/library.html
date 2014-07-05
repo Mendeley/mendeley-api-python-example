@@ -5,13 +5,14 @@
     <title>Mendeley Python Example</title>
 </head>
 <body>
+<a href="/logout">Logout</a>
 <h1>{{name}}'s documents</h1>
 
 <table>
     {% for doc in docs %}
     <tr>
-        <td><a href="/document?access_token={{access_token}}&document_id={{doc['id']}}">{{doc.title}}</a></td>
-        <td><a href="/annotations?access_token={{access_token}}&document_id={{doc['id']}}">Annotations</a></td>
+        <td><a href="/document?document_id={{doc['id']}}">{{doc.title}}</a></td>
+        <td><a href="/annotations?document_id={{doc['id']}}">Annotations</a></td>
     </tr>
     {% endfor %}
 </table>
@@ -21,7 +22,6 @@
 <form action="/metadataLookup" method="GET">
     DOI lookup:
     <input type="text" name="doi">
-    <input type="hidden" name="access_token" value="{{access_token}}">
     <input type="submit">
 </form>
 
