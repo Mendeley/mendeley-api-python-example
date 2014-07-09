@@ -10,8 +10,8 @@ CLIENT_ID = os.environ['MENDELEY_CLIENT_ID']
 CLIENT_SECRET = os.environ['MENDELEY_CLIENT_SECRET']
 REDIRECT_URI = 'http://localhost:5000/oauth'
 
-AUTHORIZE_URL = 'https://mix.mendeley.com/oauth/authorize'
-TOKEN_URL = 'https://mix.mendeley.com/oauth/token'
+AUTHORIZE_URL = 'https://api.mendeley.com/oauth/authorize'
+TOKEN_URL = 'https://api.mendeley.com/oauth/token'
 
 app = Flask(__name__)
 app.debug = True
@@ -54,12 +54,12 @@ def list_documents():
         return redirect('/')
 
     oauth = OAuth2Session(client_id=CLIENT_ID, token=session['token'])
-    docs_response = oauth.get('https://mix.mendeley.com/documents')
+    docs_response = oauth.get('https://api.mendeley.com/documents')
 
     if not docs_response.ok:
         return render_template('error.html', error_text='Error getting documents')
 
-    profile_response = oauth.get('https://mix.mendeley.com/profiles/me')
+    profile_response = oauth.get('https://api.mendeley.com/profiles/me')
 
     if not profile_response.ok:
         return render_template('error.html', error_text='Error getting profile')
@@ -77,7 +77,7 @@ def get_document():
     document_id = request.args.get('document_id')
 
     oauth = OAuth2Session(client_id=CLIENT_ID, token=session['token'])
-    doc_response = oauth.get('https://mix.mendeley.com/documents/%s' % document_id)
+    doc_response = oauth.get('https://api.mendeley.com/documents/%s' % document_id)
 
     if not doc_response.ok:
         return render_template('error.html', error_text='Error getting document')
@@ -93,11 +93,11 @@ def metadata_lookup():
     doi = request.args.get('doi')
 
     oauth = OAuth2Session(client_id=CLIENT_ID, token=session['token'])
-    metadata_response = oauth.get('https://mix.mendeley.com/metadata?%s' % urlencode({'doi': doi}))
+    metadata_response = oauth.get('https://api.mendeley.com/metadata?%s' % urlencode({'doi': doi}))
 
     if metadata_response.ok:
         catalog_id = metadata_response.json()['catalog_id']
-        response = oauth.get('https://mix.mendeley.com/catalog/%s?view=all' % catalog_id)
+        response = oauth.get('https://api.mendeley.com/catalog/%s?view=all' % catalog_id)
 
         return render_template('metadata.html', doc=response.json())
     else:
@@ -112,7 +112,7 @@ def annotations():
     document_id = request.args.get('document_id')
 
     oauth = OAuth2Session(client_id=CLIENT_ID, token=session['token'])
-    annotations_response = oauth.get('https://mix.mendeley.com/annotations?document_id=%s' % document_id)
+    annotations_response = oauth.get('https://api.mendeley.com/annotations?document_id=%s' % document_id)
 
     if annotations_response.ok:
         annotation_texts = []
