@@ -1,13 +1,14 @@
-import os
 from urllib import urlencode
 
 from flask import Flask, redirect, render_template, request, session
 from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2.rfc6749.errors import OAuth2Error
+import yaml
 
 
-CLIENT_ID = os.environ['MENDELEY_CLIENT_ID']
-CLIENT_SECRET = os.environ['MENDELEY_CLIENT_SECRET']
+with open('config.yml') as f:
+    config = yaml.load(f)
+
 REDIRECT_URI = 'http://localhost:5000/oauth'
 
 AUTHORIZE_URL = 'https://api.mendeley.com/oauth/authorize'
@@ -15,7 +16,7 @@ TOKEN_URL = 'https://api.mendeley.com/oauth/token'
 
 app = Flask(__name__)
 app.debug = True
-app.secret_key = CLIENT_SECRET
+app.secret_key = config['clientSecret']
 
 
 @app.route('/')
@@ -23,7 +24,7 @@ def home():
     if 'token' in session:
         return redirect('/listDocuments')
 
-    oauth = OAuth2Session(client_id=CLIENT_ID, redirect_uri=REDIRECT_URI, scope=['all'])
+    oauth = OAuth2Session(client_id=config['clientId'], redirect_uri=REDIRECT_URI, scope=['all'])
     (login_url, state) = oauth.authorization_url(AUTHORIZE_URL)
 
     return render_template('home.html', login_url=login_url)
@@ -35,10 +36,10 @@ def auth_return():
         return render_template('error.html', error_text=request.args.get('error_description'))
 
     code = request.args.get('code')
-    oauth = OAuth2Session(client_id=CLIENT_ID, redirect_uri=REDIRECT_URI, scope=['all'])
+    oauth = OAuth2Session(client_id=config['clientId'], redirect_uri=REDIRECT_URI, scope=['all'])
 
     try:
-        session['token'] = oauth.fetch_token(TOKEN_URL, code=code, client_secret=CLIENT_SECRET)
+        session['token'] = oauth.fetch_token(TOKEN_URL, code=code, client_secret=config['clientSecret'])
         return redirect('/listDocuments')
     except OAuth2Error as e:
         error_text = 'Error getting access token (status %s, text %s)' % (e.status_code, e.description)
@@ -53,7 +54,7 @@ def list_documents():
     if 'token' not in session:
         return redirect('/')
 
-    oauth = OAuth2Session(client_id=CLIENT_ID, token=session['token'])
+    oauth = OAuth2Session(client_id=config['clientId'], token=session['token'])
     docs_response = oauth.get('https://api.mendeley.com/documents')
 
     if not docs_response.ok:
@@ -76,7 +77,7 @@ def get_document():
 
     document_id = request.args.get('document_id')
 
-    oauth = OAuth2Session(client_id=CLIENT_ID, token=session['token'])
+    oauth = OAuth2Session(client_id=config['clientId'], token=session['token'])
     doc_response = oauth.get('https://api.mendeley.com/documents/%s' % document_id)
 
     if not doc_response.ok:
@@ -92,7 +93,7 @@ def metadata_lookup():
 
     doi = request.args.get('doi')
 
-    oauth = OAuth2Session(client_id=CLIENT_ID, token=session['token'])
+    oauth = OAuth2Session(client_id=config['clientId'], token=session['token'])
     metadata_response = oauth.get('https://api.mendeley.com/metadata?%s' % urlencode({'doi': doi}))
 
     if metadata_response.ok:
@@ -111,7 +112,7 @@ def annotations():
 
     document_id = request.args.get('document_id')
 
-    oauth = OAuth2Session(client_id=CLIENT_ID, token=session['token'])
+    oauth = OAuth2Session(client_id=config['clientId'], token=session['token'])
     annotations_response = oauth.get('https://api.mendeley.com/annotations?document_id=%s' % document_id)
 
     if annotations_response.ok:

@@ -6,3 +6,4 @@ screen*
 .screenrc
 Gemfile.lock
 *.pyc
+config.yml
