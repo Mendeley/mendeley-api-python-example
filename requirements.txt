@@ -9,7 +9,7 @@ certifi==14.05.14
 future==0.13.0
 itsdangerous==0.24
 memoized-property==1.0.2
-mendeley==0.1.1
+mendeley==0.1.2
 oauthlib==0.6.3
 python-dateutil==2.2
 requests==2.4.0
