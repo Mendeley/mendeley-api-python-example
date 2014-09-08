@@ -12,7 +12,9 @@
     {% for doc in docs %}
     <tr>
         <td><a href="/document?document_id={{doc['id']}}">{{doc.title}}</a></td>
-        <td><a href="/annotations?document_id={{doc['id']}}">Annotations</a></td>
+        {% if doc.file_attached %}
+            <td><a href="/download?document_id={{doc['id']}}">Download</a></td>
+        {% endif %}
     </tr>
     {% endfor %}
 </table>
