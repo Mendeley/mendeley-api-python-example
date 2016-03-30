@@ -24,3 +24,7 @@ It's built with [Flask](http://flask.pocoo.org/) and [Jinja2](http://jinja.pocoo
 		python mendeley-example.py
 
 6. Go to http://localhost:5000 in your browser.
+
+## Build status ##
+
+![Travis CI](https://travis-ci.org/Mendeley/mendeley-api-python-example.svg?branch=master)
